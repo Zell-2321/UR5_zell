@@ -1,0 +1,30 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>ur5_arm_zell_description</name>
+  <version>0.0.0</version>
+  <description>
+  	Self build ros2 cpp description pkg by zell,
+  	The model for the UR5 robot (without gripper) was taken from:
+    	https://github.com/ros-industrial/universal_robot.git
+  </description>
+  <maintainer email="11911719@mail.sustech.edu.cn">Zezheng_fu(Zell)</maintainer>
+  <license>BSD</license>
+
+  <buildtool_depend>ament_cmake</buildtool_depend>
+
+  <depend>xacro</depend>
+  <depend>urdf</depend>
+  <depend>ros2_control</depend>
+  <depend>gazebo_ros2_control</depend>
+  <depend>joint_state_broadcaster</depend>
+  <depend>joint_trajectory_controller</depend>
+  <depend>velocity_controllers</depend>
+
+  <test_depend>ament_lint_auto</test_depend>
+  <test_depend>ament_lint_common</test_depend>
+
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+</package>
