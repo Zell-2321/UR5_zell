@@ -1,0 +1,8 @@
+ur5_zell_robot:
+  sensor:
+    camera: false
+    IMU: false
+    force_sensor:false
+
+
+

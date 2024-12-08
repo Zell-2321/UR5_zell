@@ -2,11 +2,13 @@ import os
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
 from launch_ros.actions import Node
-
 import xacro
 
-
-def generate_launch_description():
+"""
+Launch file to load a specified xacro file
+modified the "xacro_file" parameters if you want to change xacro file
+"""
+def generate_launch_description() -> LaunchDescription:
     robot_model_path = os.path.join(
         get_package_share_directory('ur5_arm_zell_description'))
 
