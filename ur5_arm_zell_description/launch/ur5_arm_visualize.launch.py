@@ -12,7 +12,7 @@ def generate_launch_description() -> LaunchDescription:
     robot_model_path = os.path.join(
         get_package_share_directory('ur5_arm_zell_description'))
 
-    xacro_file = os.path.join(robot_model_path, 'urdf', 'ur5_control_main.urdf.xacro')
+    xacro_file = os.path.join(robot_model_path, 'urdf', 'ur5_main.urdf.xacro')
 
     # convert XACRO file into URDF
     doc = xacro.parse(open(xacro_file))
@@ -33,7 +33,15 @@ def generate_launch_description() -> LaunchDescription:
         output='screen'
     )
 
+    rviz_node = Node(
+        package='rviz2',
+        executable='rviz2',
+        name='rviz2',
+        output='log',
+    )
+
     return LaunchDescription([
         robot_state_publisher,
-        joint_state_publisher_gui_node
+        joint_state_publisher_gui_node,
+        rviz_node
     ])

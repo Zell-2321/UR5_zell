@@ -1,5 +1,0 @@
-<?xml version="1.0"?>
-<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="ur5_visual">
-    <xacro:include filename="$(find ur5_arm_zell_description)/urdf/ur5_structure.urdf.xacro" />
-    <xacro:ur5_robot prefix="ur5_1_" joint_limited="false"/>
-</robot>
