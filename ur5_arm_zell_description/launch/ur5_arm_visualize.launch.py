@@ -19,6 +19,7 @@ def generate_launch_description() -> LaunchDescription:
     xacro.process_doc(doc)
     params = {'robot_description': doc.toxml(), }
 
+    # ros2 nodes
     robot_state_publisher = Node(
         package='robot_state_publisher',
         executable='robot_state_publisher',
