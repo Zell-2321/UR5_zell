@@ -6,7 +6,7 @@ from launch_ros.actions import Node
 import xacro
 
 # this is the function launch  system will look for
-def generate_launch_description():
+def generate_launch_description() -> LaunchDescription:
 
     robot_model_path = os.path.join(
         get_package_share_directory('ur5_arm_zell_description'))
@@ -33,7 +33,7 @@ def generate_launch_description():
     )
 
     # RVIZ Configuration
-    # rviz_config_dir = os.path.join(get_package_share_directory(package_description), 'rviz', 'urdf_vis.rviz')
+    # rviz_config_dir = os.path.join(get_package_share_directory('ur5_arm_zell_description'), 'rviz', 'urdf_vis.rviz')
 
 
     rviz_node = Node(

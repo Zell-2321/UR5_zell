@@ -34,11 +34,14 @@ def generate_launch_description() -> LaunchDescription:
         output='screen'
     )
 
+    rviz_config_dir = os.path.join(get_package_share_directory("ur5_arm_zell_description"), 'rviz', 'ur5_arm_zell_visualize.rviz')
+
     rviz_node = Node(
         package='rviz2',
         executable='rviz2',
         name='rviz2',
         output='log',
+        arguments=['-d', rviz_config_dir]
     )
 
     return LaunchDescription([

@@ -9,7 +9,7 @@ from launch.actions import IncludeLaunchDescription
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from ament_index_python.packages import get_package_prefix
 
-def generate_launch_description():
+def generate_launch_description() -> LaunchDescription:
 
     pkg_gazebo_ros = get_package_share_directory('gazebo_ros')
     pkg_box_bot_gazebo = get_package_share_directory('ur5_arm_zell_gazebo')

@@ -8,7 +8,7 @@ from launch import LaunchDescription
 
 # this is the function launch  system will look for
 
-def generate_launch_description():
+def generate_launch_description() -> LaunchDescription:
     # Position and orientation
     # [X, Y, Z]
     position = [0.0, 0.0, 0.0]
