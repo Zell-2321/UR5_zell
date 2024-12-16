@@ -91,12 +91,6 @@ This package defines the UR5 robotic arm model description, including structure,
    ros2 launch ur5_arm_zell_description ur5_arm_visualize.launch.py
    ```
 
-3. **启动 Gazebo 仿真 | Launch Gazebo Simulation**  
-   启动完整的 Gazebo 仿真环境：  
-   Launch the full Gazebo simulation environment:  
-   ```bash
-   ros2 launch ur5_arm_zell_description spawn_robot_description.launch.py
-   ```
 
 ---
 

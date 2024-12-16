@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>ur5_arm_zell_bringup</name>
+  <version>0.0.0</version>
+  <description>A ros2_controller package to control the UR5 arm</description>
+  <maintainer email="11911719@mail.sustech.edu.cn">Zezheng Fu(Zell)</maintainer>
+  <license>MIT</license>
+
+  <buildtool_depend>ament_cmake</buildtool_depend>
+
+  <depend>urdf</depend>
+  <depend>xacro</depend>
+  <depend>gazebo_ros</depend>
+  <depend>robot_state_publisher</depend>
+
+  <test_depend>ament_lint_auto</test_depend>
+  <test_depend>ament_lint_common</test_depend>
+
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+</package>
