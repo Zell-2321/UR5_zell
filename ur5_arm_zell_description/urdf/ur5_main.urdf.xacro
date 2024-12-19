@@ -9,8 +9,8 @@
 
     <!-- add controller to the robot: dependences: ur5_arm_zell_bringup ur5_arm_zell_description ur5_arm_zell_gazebo -->
     <!-- ros2-gazebo-control -->
-    <!-- <xacro:ur5_ros2_control prefix="ur5_1_" />
-    <xacro:ur5_gazebo_plugin/> -->
+    <xacro:ur5_ros2_control prefix="ur5_1_" />
+    <xacro:ur5_gazebo_plugin/>
 
 
     <!-- add a world link to the robot, lift the robot above the ground -->
