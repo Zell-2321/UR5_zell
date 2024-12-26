@@ -30,6 +30,7 @@ forward_position_controller:
       - ur5_1_wrist_1_joint
       - ur5_1_wrist_2_joint
       - ur5_1_wrist_3_joint
+    interface_name: position
 
 forward_velocity_controller:
   ros__parameters:
