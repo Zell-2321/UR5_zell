@@ -6,10 +6,54 @@ from launch_ros.actions import Node
 from launch.actions import ExecuteProcess, IncludeLaunchDescription, RegisterEventHandler, DeclareLaunchArgument
 from launch.event_handlers import OnProcessExit
 from launch.launch_description_sources import PythonLaunchDescriptionSource
+from launch.substitutions import Command, FindExecutable, LaunchConfiguration, PathJoinSubstitution
 import xacro
 
 
-def generate_launch_description():
+def generate_launch_description() -> LaunchDescription:
+    # declare arguements 声明参数
+    declared_arguments = []
+
+    ## Set perfix of robot model
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "prefix",
+            default_value='"ur5_1_"',
+            description="Prefix of the joint names, useful for \
+        multi-robot setup. If changed than also joint names in the controllers' configuration \
+        have to be updated.",
+        )
+    )
+    ## controllers can be chosen:
+        # - forward_position_controller
+        # - forward_velocity_controller
+        # - forward_acceleration_controller
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "robot_controller",
+            default_value="forward_velocity_controller",
+            description="Robot controller to start. \
+                see: https://control.ros.org/rolling/index.html for more description",
+        )
+    )
+    ## start rViz2
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "gui",
+            default_value="true",
+            description="Start RViz2 automatically with this launch file.",
+        )
+    )
+
+    #---------------------------------------------------------------------------------------------------------------------------
+
+    # Initialize Arguments
+    prefix = LaunchConfiguration("prefix")
+    robot_controller = LaunchConfiguration("robot_controller")
+    gui = LaunchConfiguration("gui")
+
+    #---------------------------------------------------------------------------------------------------------------------------
+
     ur5_description_path = os.path.join(
         get_package_share_directory('ur5_arm_zell_description'))
 
@@ -41,10 +85,16 @@ def generate_launch_description():
                    "--controller-manager", "/controller_manager"],
     )
 
-    robot_controller_spawner = Node(
+    # robot_controller_spawner = Node(
+    #     package="controller_manager",
+    #     executable="spawner",
+    #     arguments=["forward_position_controller", "-c", "/controller_manager"],
+    # )
+
+    robot_trajectory_controller_spawner = Node(
         package="controller_manager",
         executable="spawner",
-        arguments=["forward_position_controller", "-c", "/controller_manager"],
+        arguments=["joint_trajectory_controller", "-c", "/controller_manager"],
     )
 
 
@@ -58,7 +108,7 @@ def generate_launch_description():
         RegisterEventHandler(
             event_handler=OnProcessExit(
                 target_action=joint_state_broadcaster_spawner,
-                on_exit=[robot_controller_spawner],
+                on_exit=[robot_trajectory_controller_spawner],
             )
         ),
         spawn_entity,

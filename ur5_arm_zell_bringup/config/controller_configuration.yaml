@@ -1,13 +1,19 @@
 # Controller manager configuration
 controller_manager:
   ros__parameters:
-    update_rate: 10  # Hz
+    update_rate: 100  # Hz
 
     ### Controllers available
     joint_state_broadcaster:
       type: joint_state_broadcaster/JointStateBroadcaster
 
     forward_position_controller:
+      type: forward_command_controller/ForwardCommandController
+    
+    forward_velocity_controller:
+      type: velocity_controllers/JointGroupVelocityController
+
+    forward_acceleration_controller:
       type: forward_command_controller/ForwardCommandController
 
     joint_trajectory_controller:
@@ -24,7 +30,27 @@ forward_position_controller:
       - ur5_1_wrist_1_joint
       - ur5_1_wrist_2_joint
       - ur5_1_wrist_3_joint
-    interface_name: position
+
+forward_velocity_controller:
+  ros__parameters:
+    joints:
+      - ur5_1_shoulder_pan_joint
+      - ur5_1_shoulder_lift_joint
+      - ur5_1_elbow_joint
+      - ur5_1_wrist_1_joint
+      - ur5_1_wrist_2_joint
+      - ur5_1_wrist_3_joint
+
+forward_acceleration_controller:
+  ros__parameters:
+    joints:
+      - ur5_1_shoulder_pan_joint
+      - ur5_1_shoulder_lift_joint
+      - ur5_1_elbow_joint
+      - ur5_1_wrist_1_joint
+      - ur5_1_wrist_2_joint
+      - ur5_1_wrist_3_joint
+    interface_name: acceleration
 
 
 joint_trajectory_controller:
@@ -39,13 +65,17 @@ joint_trajectory_controller:
 
     command_interfaces:
       - position
+      - velocity
+      - acceleration
 
     state_interfaces:
       - position
+      - velocity
+      - acceleration
 
-    state_publish_rate: 200.0 # Hz, Defaults to 50
+    state_publish_rate: 50.0 # Hz, Defaults to 50
     action_monitor_rate: 20.0 # Hz, Defaults to 20
-
+    interpolation_method: splines
     allow_partial_joints_goal: false # Defaults to false
     open_loop_control: true
     allow_integration_in_goal_trajectories: true
