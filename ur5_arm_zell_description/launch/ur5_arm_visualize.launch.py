@@ -67,7 +67,7 @@ def generate_launch_description() -> LaunchDescription:
     )
 
     robot_description = {
-    "robot_description": ParameterValue(robot_description_content, value_type=str)
+        "robot_description": ParameterValue(robot_description_content, value_type=str)
     }
 
     # ros2 nodes

@@ -1,13 +1,12 @@
-import os
-
-from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
-from launch_ros.actions import Node
-from launch.actions import ExecuteProcess, IncludeLaunchDescription, RegisterEventHandler, DeclareLaunchArgument
+from launch.actions import DeclareLaunchArgument, RegisterEventHandler
+from launch.conditions import IfCondition
 from launch.event_handlers import OnProcessExit
-from launch.launch_description_sources import PythonLaunchDescriptionSource
+from launch_ros.parameter_descriptions import ParameterValue
 from launch.substitutions import Command, FindExecutable, LaunchConfiguration, PathJoinSubstitution
-import xacro
+
+from launch_ros.actions import Node
+from launch_ros.substitutions import FindPackageShare
 
 
 def generate_launch_description() -> LaunchDescription:
@@ -24,16 +23,11 @@ def generate_launch_description() -> LaunchDescription:
         have to be updated.",
         )
     )
-    ## controllers can be chosen:
-        # - forward_position_controller
-        # - forward_velocity_controller
-        # - forward_acceleration_controller
     declared_arguments.append(
         DeclareLaunchArgument(
-            "robot_controller",
-            default_value="forward_velocity_controller",
-            description="Robot controller to start. \
-                see: https://control.ros.org/rolling/index.html for more description",
+            "joint_limited",
+            default_value="false",
+            description="If true, all joint value will between -pi and pi, otherwise, it will be the joint limits in the xacro file.",
         )
     )
     ## start rViz2
@@ -44,74 +38,138 @@ def generate_launch_description() -> LaunchDescription:
             description="Start RViz2 automatically with this launch file.",
         )
     )
-
+    ## controllers can be chosen:
+        # - forward_position_controller
+        # - forward_velocity_controller
+        # - forward_acceleration_controller
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "robot_controller",
+            default_value="forward_position_controller",
+            description="Robot controller to start. \
+                see: https://control.ros.org/rolling/index.html for more description",
+        )
+    )
+    
     #---------------------------------------------------------------------------------------------------------------------------
 
     # Initialize Arguments
     prefix = LaunchConfiguration("prefix")
+    joint_limited=LaunchConfiguration("joint_limited")
     robot_controller = LaunchConfiguration("robot_controller")
     gui = LaunchConfiguration("gui")
 
     #---------------------------------------------------------------------------------------------------------------------------
-
-    ur5_description_path = os.path.join(
-        get_package_share_directory('ur5_arm_zell_description'))
-
-    xacro_file = os.path.join(ur5_description_path,
-                              'urdf',
-                              'ur5_main.urdf.xacro')
-
-    doc = xacro.parse(open(xacro_file))
-    xacro.process_doc(doc)
-    robot_description_config = doc.toxml()
-    robot_description = {'robot_description': robot_description_config}  
-
-    node_robot_state_publisher = Node(
-        package='robot_state_publisher',
-        executable='robot_state_publisher',
-        output='screen',
-        parameters=[robot_description]
+    # convert XACRO file into URDF
+    robot_description_content = Command(
+        [
+            PathJoinSubstitution([FindExecutable(name="xacro")]),
+            " ",
+            PathJoinSubstitution(
+                [
+                    FindPackageShare("ur5_arm_zell_description"),
+                    "urdf",
+                    "ur5_main.urdf.xacro",
+                ]
+            ),
+            " ",
+            "prefix:=",
+            prefix,
+            " ",
+            "joint_limited:=",
+            joint_limited,
+        ]
     )
 
+    robot_description = {
+        "robot_description": ParameterValue(robot_description_content, value_type=str)
+    }
+
+    #---------------------------------------------------------------------------------------------------------------------------
+    ## setup file
+    robot_controllers = PathJoinSubstitution(
+        [
+            FindPackageShare("ur5_arm_zell_bringup"),
+            "config",
+            "controller_configuration.yaml",
+        ]
+    )
+
+    rviz_config_file = PathJoinSubstitution(
+        [FindPackageShare("ur5_arm_zell_bringup"), "rviz", "rviz_setting.rviz"]
+    )
+
+    #---------------------------------------------------------------------------------------------------------------------------
+    # Nodes
+    # control_node = Node(
+    #     package="controller_manager",
+    #     executable="ros2_control_node",
+    #     parameters=[robot_controllers],
+    #     output="both",
+    #     remappings=[
+    #         ("~/robot_description", "/robot_description"),
+    #     ],
+    # ) # 如果启动了这个节点，则 description包中ur5_gazebo中不需要再次声明插件，否则会出现
+    # [ERROR] [1716894885.022794553] [controller_manager]: The published robot description file (urdf) seems not to be genuine. 
+    # The following error was caught:According to the loaded plugin descriptions the class gazebo_ros2_control/GazeboSystem with base 
+    # class type hardware_interface::SystemInterface does not exist. Declared types are  fake_components/GenericSystem mock_components/GenericSystem
+    robot_state_pub_node = Node(
+        package="robot_state_publisher",
+        executable="robot_state_publisher",
+        output="both",
+        parameters=[robot_description],
+    )
+    rviz_node = Node(
+        package="rviz2",
+        executable="rviz2",
+        name="rviz2",
+        output="log",
+        arguments=["-d", rviz_config_file],
+        condition=IfCondition(gui),
+    )
     spawn_entity = Node(package='gazebo_ros', executable='spawn_entity.py',
                         arguments=['-topic', 'robot_description',
                                    '-entity', 'robot'],
-                        output='screen') 
+                        output='screen')
 
     joint_state_broadcaster_spawner = Node(
         package="controller_manager",
         executable="spawner",
-        arguments=["joint_state_broadcaster", 
-                   "--controller-manager", "/controller_manager"],
+        arguments=["joint_state_broadcaster", "--controller-manager", "/controller_manager"],
     )
 
     robot_controller_spawner = Node(
         package="controller_manager",
         executable="spawner",
-        arguments=["forward_position_controller", "-c", "/controller_manager"],
+        arguments=[robot_controller, "--controller-manager", "/controller_manager"],
     )
 
-    # robot_trajectory_controller_spawner = Node(
-    #     package="controller_manager",
-    #     executable="spawner",
-    #     arguments=["joint_trajectory_controller", "-c", "/controller_manager"],
-    # )
+    #---------------------------------------------------------------------------------------------------------------------------
+    # Delay rviz start after `joint_state_broadcaster`
+    delay_rviz_after_joint_state_broadcaster_spawner = RegisterEventHandler(
+        event_handler=OnProcessExit(
+            target_action=joint_state_broadcaster_spawner,
+            on_exit=[rviz_node],
+        )
+    )
 
+    # Delay start of joint_state_broadcaster after `robot_controller`
+    # TODO(anyone): This is a workaround for flaky tests. Remove when fixed.
+    delay_joint_state_broadcaster_after_robot_controller_spawner = RegisterEventHandler(
+        event_handler=OnProcessExit(
+            target_action=robot_controller_spawner,
+            on_exit=[joint_state_broadcaster_spawner],
+        )
+    )
 
-    return LaunchDescription([
-        RegisterEventHandler(
-            event_handler=OnProcessExit(
-                target_action=spawn_entity,
-                on_exit=[joint_state_broadcaster_spawner],
-            )
-        ),
-        RegisterEventHandler(
-            event_handler=OnProcessExit(
-                target_action=joint_state_broadcaster_spawner,
-                on_exit=[robot_controller_spawner],
-            )
-        ),
+    nodes = [
         spawn_entity,
-        node_robot_state_publisher,
-    ])
+        # control_node,
+        robot_state_pub_node,
+        robot_controller_spawner,
+        delay_rviz_after_joint_state_broadcaster_spawner,
+        delay_joint_state_broadcaster_after_robot_controller_spawner,
+    ]
+
+    return LaunchDescription(declared_arguments + nodes)
 

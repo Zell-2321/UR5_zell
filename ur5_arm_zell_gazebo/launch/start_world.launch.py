@@ -42,11 +42,15 @@ def generate_launch_description() -> LaunchDescription:
     print("GAZEBO PLUGINS PATH=="+str(os.environ["GAZEBO_PLUGIN_PATH"]))
 
     # Gazebo launch
+    # gazebo = IncludeLaunchDescription(
+    #     PythonLaunchDescriptionSource(
+    #         os.path.join(pkg_gazebo_ros, 'launch', 'gazebo.launch.py'),
+    #     )
+    # )    
     gazebo = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(
-            os.path.join(pkg_gazebo_ros, 'launch', 'gazebo.launch.py'),
-        )
-    )    
+            PythonLaunchDescriptionSource([os.path.join(
+                get_package_share_directory('gazebo_ros'), 'launch'), '/gazebo.launch.py']),
+            )
 
     return LaunchDescription([
         DeclareLaunchArgument(
