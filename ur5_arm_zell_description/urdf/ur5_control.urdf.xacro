@@ -18,9 +18,14 @@
                     <param name="min">-2</param>
                     <param name="max">2</param>
                 </command_interface>
+                <command_interface name="effort">
+                    <param name="min">-1000</param>
+                    <param name="max">1000</param>
+                </command_interface>
                 <state_interface name="position"/>
                 <state_interface name="velocity"/>
                 <state_interface name="acceleration"/>
+                <state_interface name="effort"/>
             </joint> 
 
             <joint name="${prefix}shoulder_lift_joint">
@@ -36,9 +41,14 @@
                     <param name="min">-2</param>
                     <param name="max">2</param>
                 </command_interface>
+                <command_interface name="effort">
+                    <param name="min">-1000</param>
+                    <param name="max">1000</param>
+                </command_interface>
                 <state_interface name="position"/>
                 <state_interface name="velocity"/>
                 <state_interface name="acceleration"/>
+                <state_interface name="effort"/>
             </joint>
 
             <joint name="${prefix}elbow_joint">
@@ -54,9 +64,14 @@
                     <param name="min">-2</param>
                     <param name="max">2</param>
                 </command_interface>
+                <command_interface name="effort">
+                    <param name="min">-1000</param>
+                    <param name="max">1000</param>
+                </command_interface>
                 <state_interface name="position"/>
                 <state_interface name="velocity"/>
                 <state_interface name="acceleration"/>
+                <state_interface name="effort"/>
             </joint>
 
             <joint name="${prefix}wrist_1_joint">
@@ -72,9 +87,14 @@
                     <param name="min">-2</param>
                     <param name="max">2</param>
                 </command_interface>
+                <command_interface name="effort">
+                    <param name="min">-1000</param>
+                    <param name="max">1000</param>
+                </command_interface>
                 <state_interface name="position"/>
                 <state_interface name="velocity"/>
                 <state_interface name="acceleration"/>
+                <state_interface name="effort"/>
             </joint>
 
             <joint name="${prefix}wrist_2_joint">
@@ -90,9 +110,14 @@
                     <param name="min">-2</param>
                     <param name="max">2</param>
                 </command_interface>
+                <command_interface name="effort">
+                    <param name="min">-1000</param>
+                    <param name="max">1000</param>
+                </command_interface>
                 <state_interface name="position"/>
                 <state_interface name="velocity"/>
                 <state_interface name="acceleration"/>
+                <state_interface name="effort"/>
             </joint>
 
             <joint name="${prefix}wrist_3_joint">
@@ -108,9 +133,14 @@
                     <param name="min">-2</param>
                     <param name="max">2</param>
                 </command_interface>
+                <command_interface name="effort">
+                    <param name="min">-1000</param>
+                    <param name="max">1000</param>
+                </command_interface>
                 <state_interface name="position"/>
                 <state_interface name="velocity"/>
                 <state_interface name="acceleration"/>
+                <state_interface name="effort"/>
             </joint>
 
         </ros2_control>

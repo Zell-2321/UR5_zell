@@ -13,8 +13,11 @@ controller_manager:
     forward_velocity_controller:
       type: velocity_controllers/JointGroupVelocityController
 
-    forward_acceleration_controller:
+    forward_acceleration_controller: # gazebo Hardware Interface不支持直接加速度控制
       type: forward_command_controller/ForwardCommandController
+
+    joint_effort_controller:
+      type: effort_controllers/JointGroupEffortController
 
     joint_trajectory_controller:
       type: joint_trajectory_controller/JointTrajectoryController
@@ -53,6 +56,16 @@ forward_acceleration_controller:
       - ur5_1_wrist_3_joint
     interface_name: acceleration
 
+joint_effort_controller:
+  ros__parameters:
+    joints:
+      - ur5_1_shoulder_pan_joint
+      - ur5_1_shoulder_lift_joint
+      - ur5_1_elbow_joint
+      - ur5_1_wrist_1_joint
+      - ur5_1_wrist_2_joint
+      - ur5_1_wrist_3_joint
+    interface_name: effort
 
 joint_trajectory_controller:
   ros__parameters:
