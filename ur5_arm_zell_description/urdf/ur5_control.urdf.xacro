@@ -2,8 +2,14 @@
 <robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="ur5_ros2_control">
     <xacro:macro name="ur5_ros2_control" params="prefix">
         <ros2_control name="Zell_UR5_1_Robot_System" type="system">
-            <hardware>
+            <!-- <hardware>
                 <plugin>gazebo_ros2_control/GazeboSystem</plugin>
+            </hardware> -->
+            <hardware>   
+                <plugin>ur5_arm_zell_hardware_interface/RobotSystemHardware</plugin>
+                <param name="example_param_hw_start_duration_sec">0.0</param>
+                <param name="example_param_hw_stop_duration_sec">3.0</param>
+                <param name="example_param_hw_slowdown">10.0</param>
             </hardware>
             <joint name="${prefix}shoulder_pan_joint">
                 <command_interface name="position">

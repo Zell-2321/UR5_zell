@@ -1,0 +1,9 @@
+<library path="ur5_arm_zell_hardware_interface">
+    <class name="ur5_arm_zell_hardware_interface/RobotSystemHardware"
+        type="ur5_arm_zell_hardware_interface::RobotSystemHardware"
+        base_class_type="hardware_interface::SystemInterface">
+    <description>
+        TODO: Modified by: ros2_control minimal hardware interface template
+    </description>
+    </class>
+</library>
