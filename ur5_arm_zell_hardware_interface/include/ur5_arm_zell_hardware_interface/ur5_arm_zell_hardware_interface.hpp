@@ -17,6 +17,7 @@ using CallbackReturn = rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface
 
 namespace ur5_arm_zell_hardware_interface
 {
+
 class RobotSystemHardware : public hardware_interface::SystemInterface
 {
 public:
@@ -44,9 +45,25 @@ private:
     double hw_stop_sec_;
     double hw_slowdown_;
 
+    std::vector<double> hw_position_max_;
+    std::vector<double> hw_position_min_;
+    std::vector<double> hw_velocity_max_;
+    std::vector<double> hw_velocity_min_;
+    std::vector<double> hw_acceleration_max_;
+    std::vector<double> hw_acceleration_min_;
+    std::vector<double> hw_effort_max_;
+    std::vector<double> hw_effort_min_;
+
+
     // Store the command for the simulated robot
-    std::vector<double> hw_commands_;
-    std::vector<double> hw_states_;
+    std::vector<double> hw_commands_position_;
+    std::vector<double> hw_commands_velocity_;
+    std::vector<double> hw_commands_acceleration_;
+    std::vector<double> hw_commands_effort_;
+    std::vector<double> hw_states_position_;
+    std::vector<double> hw_states_velocity_;
+    std::vector<double> hw_states_acceleration_;
+    std::vector<double> hw_states_effort_;
 };
 
 }   // namespace ur5_arm_zell_hardware_interface
