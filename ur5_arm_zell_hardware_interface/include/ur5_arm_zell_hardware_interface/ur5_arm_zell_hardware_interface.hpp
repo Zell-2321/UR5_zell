@@ -21,7 +21,7 @@ namespace ur5_arm_zell_hardware_interface
 class RobotSystemHardware : public hardware_interface::SystemInterface
 {
 public:
-    RCLCPP_SHARED_PTR_DEFINITIONS(RobotSystemHardware);
+    RCLCPP_SHARED_PTR_DEFINITIONS(RobotSystemHardware)
 
     CallbackReturn on_init(const hardware_interface::HardwareInfo & info) override; // 虚函数
 

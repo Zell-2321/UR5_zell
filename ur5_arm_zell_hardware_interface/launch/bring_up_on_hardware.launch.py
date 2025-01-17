@@ -50,12 +50,12 @@ def generate_launch_description():
                        "-c", "/controller_manager"],
         ),
 
-        Node(
-            package="controller_manager",
-            executable="spawner",
-            arguments=["joint_trajectory_controller",
-                       "-c", "/controller_manager"],
-        ),
+        # Node(
+        #     package="controller_manager",
+        #     executable="spawner",
+        #     arguments=["joint_trajectory_controller",
+        #                "-c", "/controller_manager"],
+        # ),
 
         Node(
             package="robot_state_publisher",

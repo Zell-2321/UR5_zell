@@ -311,6 +311,10 @@ hardware_interface::return_type RobotSystemHardware::read(const rclcpp::Time &ti
 
         hw_states_effort_[i] = std::clamp(hw_commands_effort_[i], hw_effort_min_[i], hw_effort_max_[i]); // + Noise
         hw_states_acceleration_[i] = std::clamp(hw_commands_acceleration_[i], hw_acceleration_min_[i], hw_acceleration_max_[i]); // + Noise
+
+        hw_states_velocity_[i] = std::clamp(hw_commands_velocity_[i], hw_velocity_min_[i], hw_velocity_max_[i]);
+        // hw_states_position_[i] = std::clamp(hw_commands_position_[i], hw_position_min_[i], hw_position_max_[i]);
+
         
         hw_states_position_[i] = hw_states_position_[i] + (hw_commands_position_[i] - hw_states_position_[i]) / hw_slowdown_;
         RCLCPP_INFO(
@@ -328,21 +332,21 @@ hardware_interface::return_type RobotSystemHardware::write(const rclcpp::Time & 
   // START: This part here is for exemplary purposes - Please do not copy to your production code
   RCLCPP_INFO(rclcpp::get_logger("RobotSystemHardware"), "Writing...");
 
-  for (uint i = 0; i < hw_commands_position_.size(); i++)
-  {
-    // Simulate sending commands to the hardware
-    RCLCPP_INFO(
-      rclcpp::get_logger("RobotSystemHardware"), "Got command %.5f for joint %d!",
-      hw_commands_position_[i], i);
-  }
-  RCLCPP_INFO(
-    rclcpp::get_logger("RobotSystemHardware"), "Joints successfully written!");
+//   for (uint i = 0; i < hw_commands_position_.size(); i++)
+//   {
+//     // Simulate sending commands to the hardware
+//     RCLCPP_INFO(
+//       rclcpp::get_logger("RobotSystemHardware"), "Got command %.5f for joint %d!",
+//       hw_commands_position_[i], i);
+//   }
+//   RCLCPP_INFO(
+//     rclcpp::get_logger("RobotSystemHardware"), "Joints successfully written!");
   // END: This part here is for exemplary purposes - Please do not copy to your production code
 
   return hardware_interface::return_type::OK;
 }
 
-}   // namespace my_robot_hardware_interface
+}   // namespace ur5_arm_zell_hardware_interface
 
 #include "pluginlib/class_list_macros.hpp"
 
