@@ -309,13 +309,13 @@ hardware_interface::return_type RobotSystemHardware::read(const rclcpp::Time &ti
         // Simulate robot movement
         // effort and acceleration can be controled immediately with noise
 
-        hw_states_effort_[i] = std::clamp(hw_commands_effort_[i], hw_effort_min_[i], hw_effort_max_[i]); // + Noise
-        hw_states_acceleration_[i] = std::clamp(hw_commands_acceleration_[i], hw_acceleration_min_[i], hw_acceleration_max_[i]); // + Noise
+        // hw_states_effort_[i] = std::clamp(hw_commands_effort_[i], hw_effort_min_[i], hw_effort_max_[i]); // + Noise
+        // hw_states_acceleration_[i] = std::clamp(hw_commands_acceleration_[i], hw_acceleration_min_[i], hw_acceleration_max_[i]); // + Noise
 
-        hw_states_velocity_[i] = std::clamp(hw_commands_velocity_[i], hw_velocity_min_[i], hw_velocity_max_[i]);
+        // hw_states_velocity_[i] = std::clamp(hw_commands_velocity_[i], hw_velocity_min_[i], hw_velocity_max_[i]);
         // hw_states_position_[i] = std::clamp(hw_commands_position_[i], hw_position_min_[i], hw_position_max_[i]);
 
-        
+        // Position control only
         hw_states_position_[i] = hw_states_position_[i] + (hw_commands_position_[i] - hw_states_position_[i]) / hw_slowdown_;
         RCLCPP_INFO(
             rclcpp::get_logger("RobotSystemHardware"), "Got state %.5f for joint %d!",
