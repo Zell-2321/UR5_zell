@@ -1,0 +1,1 @@
+ros2 topic pub /ur5_arm_zell_controller/commands control_msgs/msg/JointJog "{joint_names: ['ur5_1_shoulder_pan_joint', 'ur5_1_shoulder_lift_joint', 'ur5_1_elbow_joint', 'ur5_1_wrist_1_joint', 'ur5_1_wrist_2_joint', 'ur5_1_wrist_3_joint'], displacements: [0.5, 0.5, 0.5, 0.2, 0.2, 0.2], velocities: []}" --once

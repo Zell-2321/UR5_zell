@@ -9,39 +9,14 @@ namespace ur5_arm_zell_controller
 {
 RobotController::RobotController() : controller_interface::ControllerInterface() {}
 
-controller_interface::CallbackReturn RobotController::on_init()
+controller_interface::CallbackReturn RobotController::on_init() 
 {
-    try 
-    {
-        // 声明并初始化参数 read parameters from yaml
-        joint_names_ = auto_declare<std::vector<std::string>>("joints", std::vector<std::string>()); // function<Template>()
-        command_interface_types_ = auto_declare<std::vector<std::string>>("command_interfaces", {"position"});
-        state_interface_types_ = auto_declare<std::vector<std::string>>("state_interfaces", {"position"});
-
-        // 检查参数有效性
-        if (joint_names_.empty()) 
-        {
-            fprintf(stderr, "Error: 'joints' parameter is empty. Please specify the joint names.\n");
-            return CallbackReturn::ERROR;
-        }
-        if (command_interface_types_.size() != joint_names_.size()) 
-        {
-            fprintf(stderr, "Error: 'command_interfaces' size does not match 'joints' size.\n");
-            return CallbackReturn::ERROR;
-        }
-        if (state_interface_types_.size() != joint_names_.size()) 
-        {
-            fprintf(stderr, "Error: 'state_interfaces' size does not match 'joints' size.\n");
-            return CallbackReturn::ERROR;
-        }
-
-        // 初始化插值结构
-        // point_interp_.positions.assign(joint_names_.size(), 0);
-        // point_interp_.velocities.assign(joint_names_.size(), 0);
-
-    } catch (const std::exception &e) 
-    {
-        fprintf(stderr, "Exception thrown during on_init: %s\n", e.what());
+    try {
+        auto_declare("joints", std::vector<std::string>());
+        auto_declare("interface_name", std::string());
+    } catch (const std::exception &e) {
+        fprintf(stderr, "Exception thrown during init stage with message: %s \n",
+                e.what());
         return CallbackReturn::ERROR;
     }
 
@@ -50,34 +25,46 @@ controller_interface::CallbackReturn RobotController::on_init()
 
 controller_interface::InterfaceConfiguration RobotController::command_interface_configuration() const
 {
-    controller_interface::InterfaceConfiguration conf = {controller_interface::interface_configuration_type::INDIVIDUAL, {}};
+    controller_interface::InterfaceConfiguration command_interfaces_config;
+    command_interfaces_config.type = controller_interface::interface_configuration_type::INDIVIDUAL;
 
-    conf.names.reserve(joint_names_.size() * command_interface_types_.size());
-    for (const auto & joint_name : joint_names_)
-    {
-        for (const auto & interface_type : command_interface_types_)
-        {
-        conf.names.push_back(joint_name + "/" + interface_type);
-        }
+    command_interfaces_config.names.reserve(joint_names_.size());
+    for (const auto & joint : joint_names_) {
+        command_interfaces_config.names.push_back(joint + "/" + interface_name_);
     }
 
-    return conf;
+    return command_interfaces_config;
 }
 
 controller_interface::InterfaceConfiguration RobotController::state_interface_configuration() const
 {
-    controller_interface::InterfaceConfiguration conf = {controller_interface::interface_configuration_type::INDIVIDUAL, {}};
+    controller_interface::InterfaceConfiguration state_interfaces_config;
+    state_interfaces_config.type = controller_interface::interface_configuration_type::INDIVIDUAL;
 
-    conf.names.reserve(joint_names_.size() * state_interface_types_.size());
-    for (const auto & joint_name : joint_names_)
-    {
-        for (const auto & interface_type : state_interface_types_)
-        {
-        conf.names.push_back(joint_name + "/" + interface_type);
+    state_interfaces_config.names.reserve(joint_names_.size());
+    for (const auto & joint : joint_names_) {
+        state_interfaces_config.names.push_back(joint + "/" + interface_name_);
+    }
+
+    return state_interfaces_config;
+}
+
+template <typename T>
+bool get_ordered_interfaces(
+  std::vector<T> & unordered_interfaces, const std::vector<std::string> & joint_names,
+  const std::string & interface_type, std::vector<std::reference_wrapper<T>> & ordered_interfaces)
+{
+    for (const auto & joint_name : joint_names) {
+        for (auto & command_interface : unordered_interfaces) {
+            if (
+                (command_interface.get_name() == joint_name) &&
+                (command_interface.get_interface_name() == interface_type)) {
+                ordered_interfaces.push_back(std::ref(command_interface));
+            }
         }
     }
 
-    return conf;
+  return joint_names.size() == ordered_interfaces.size();
 }
 
 controller_interface::CallbackReturn RobotController::on_configure(const rclcpp_lifecycle::State & /*previous_state*/) 
@@ -103,22 +90,22 @@ controller_interface::CallbackReturn RobotController::on_configure(const rclcpp_
         return error_if_empty(parameter, parameter_name);
     };
 
-    //   if (
-    //     get_string_array_param_and_error_if_empty(joint_names_, "joints") ||
-    //       get_string_param_and_error_if_empty(interface_name_, "interface_name")) {
-    //     return CallbackReturn::ERROR;
-    //   }
+    if (
+        get_string_array_param_and_error_if_empty(joint_names_, "joints") ||
+        get_string_param_and_error_if_empty(interface_name_, "interface_name")) {
+        return CallbackReturn::ERROR;
+    }
 
     // Command Subscriber and callbacks
     auto callback_command =
         [&](const std::shared_ptr<ControllerCommandMsg> msg) -> void {
         if (msg->joint_names.size() == joint_names_.size()) {
-            input_command_.writeFromNonRT(msg);
+        input_command_.writeFromNonRT(msg);
         } else {
-            RCLCPP_ERROR(get_node()->get_logger(),
-                        "Received %zu , but expected %zu joints in command. "
-                        "Ignoring message.",
-                        msg->joint_names.size(), joint_names_.size());
+        RCLCPP_ERROR(get_node()->get_logger(),
+                    "Received %zu , but expected %zu joints in command. "
+                    "Ignoring message.",
+                    msg->joint_names.size(), joint_names_.size());
         }
     };
     command_subscriber_ = get_node()->create_subscription<ControllerCommandMsg>(
@@ -172,6 +159,21 @@ controller_interface::return_type RobotController::update(const rclcpp::Time &ti
     }
 
     return controller_interface::return_type::OK;
+}
+
+controller_interface::CallbackReturn RobotController::on_cleanup(const rclcpp_lifecycle::State &)
+{
+    return CallbackReturn::SUCCESS;
+}
+
+controller_interface::CallbackReturn RobotController::on_error(const rclcpp_lifecycle::State &)
+{
+    return CallbackReturn::SUCCESS;
+}
+
+controller_interface::CallbackReturn RobotController::on_shutdown(const rclcpp_lifecycle::State &)
+{
+    return CallbackReturn::SUCCESS;
 }
 
 }  // namespace ur5_arm_zell_controller
