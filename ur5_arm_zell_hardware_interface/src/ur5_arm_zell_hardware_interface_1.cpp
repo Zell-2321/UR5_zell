@@ -864,6 +864,5 @@ hardware_interface::return_type GazeboSystem::write(
 }
 }  // namespace ur5_arm_zell_hardware_interface
 
-#include "pluginlib/class_list_macros.hpp"  // NOLINT
-PLUGINLIB_EXPORT_CLASS(
-  ur5_arm_zell_hardware_interface::GazeboSystem, ur5_arm_zell_hardware_interface::GazeboSystemInterface)
+#include "pluginlib/class_list_macros.hpp"  
+PLUGINLIB_EXPORT_CLASS(ur5_arm_zell_hardware_interface::GazeboSystem, ur5_arm_zell_hardware_interface::GazeboSystemInterface)

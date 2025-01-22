@@ -1,10 +1,5 @@
 cmake_minimum_required(VERSION 3.8)
-project(ur5_arm_zell_hardware_interface)
-
-# Default to C++14
-if(NOT CMAKE_CXX_STANDARD)
-  set(CMAKE_CXX_STANDARD 14)
-endif()
+project(ur5_arm_zell_controller_interface)
 
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra -Wpedantic)
@@ -12,48 +7,53 @@ endif()
 
 # find dependencies
 find_package(ament_cmake REQUIRED)
+find_package(control_msgs REQUIRED)
+find_package(controller_interface REQUIRED)
 find_package(hardware_interface REQUIRED)
 find_package(pluginlib REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(rclcpp_lifecycle REQUIRED)
+find_package(realtime_tools REQUIRED)
+find_package(example_interfaces REQUIRED)
 
-## COMPILE
+# COMPILE
 add_library(
   ${PROJECT_NAME}
   SHARED
-  src/ur5_arm_zell_hardware_interface.cpp
+  src/ur5_arm_zell_controller.cpp
 )
 target_include_directories(
   ${PROJECT_NAME}
-  PRIVATE
-  include
+  PUBLIC
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  $<INSTALL_INTERFACE:include>
 )
 ament_target_dependencies(
   ${PROJECT_NAME}
+  control_msgs
+  controller_interface
   hardware_interface
   pluginlib
   rclcpp
   rclcpp_lifecycle
+  realtime_tools
 )
+# prevent pluginlib from using boost
+target_compile_definitions(${PROJECT_NAME} PUBLIC "PLUGINLIB__DISABLE_BOOST_FUNCTIONS")
 
-pluginlib_export_plugin_description_file(hardware_interface ur5_arm_zell_hardware_interface.xml)
+pluginlib_export_plugin_description_file(controller_interface ur5_arm_zell_controller.xml)
 
 # INSTALL
 install(
   TARGETS ${PROJECT_NAME}
-  DESTINATION lib
-)
-install(
-  DIRECTORY include/
-  DESTINATION include
+  RUNTIME DESTINATION bin
+  ARCHIVE DESTINATION lib
+  LIBRARY DESTINATION lib
 )
 
 install(
-  DIRECTORY
-    launch
-    config
-  DESTINATION
-    share/${PROJECT_NAME}/
+  DIRECTORY include/
+  DESTINATION include
 )
 
 if(BUILD_TESTING)
@@ -76,10 +76,12 @@ ament_export_libraries(
   ${PROJECT_NAME}
 )
 ament_export_dependencies(
+  control_msgs
+  controller_interface
   hardware_interface
   pluginlib
   rclcpp
   rclcpp_lifecycle
+  realtime_tools
 )
-
 ament_package()

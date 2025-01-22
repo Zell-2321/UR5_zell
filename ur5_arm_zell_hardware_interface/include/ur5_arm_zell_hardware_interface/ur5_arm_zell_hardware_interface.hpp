@@ -1,5 +1,5 @@
-#ifndef ROS2_CONTROL_DEMO_HARDWARE__RRBOT_SYSTEM_HPP_
-#define ROS2_CONTROL_DEMO_HARDWARE__RRBOT_SYSTEM_HPP_
+#ifndef ROS2_CONTROL_HARDWARE__ROBOT_SYSTEM_HPP_
+#define ROS2_CONTROL_HARDWARE__ROBOT_SYSTEM_HPP_
 
 #include <memory>
 #include <string>
@@ -41,19 +41,12 @@ public:
     RCLCPP_SHARED_PTR_DEFINITIONS(RobotSystemHardware)
 
     CallbackReturn on_init(const hardware_interface::HardwareInfo & info) override; // 虚函数
-
     CallbackReturn on_configure(const rclcpp_lifecycle::State & previous_state) override; // 虚函数
-
     std::vector<hardware_interface::StateInterface> export_state_interfaces() override; // 纯虚函数
-
     std::vector<hardware_interface::CommandInterface> export_command_interfaces() override; // 纯虚函数
-
     CallbackReturn on_activate(const rclcpp_lifecycle::State & previous_state) override; // 虚函数
-
     CallbackReturn on_deactivate(const rclcpp_lifecycle::State & previous_state) override; // 虚函数
-
     hardware_interface::return_type read(const rclcpp::Time &time, const rclcpp::Duration &period) override; // 纯虚函数
-
     hardware_interface::return_type write(const rclcpp::Time & /*time*/, const rclcpp::Duration & /*period*/) override; // 纯虚函数
 
 private:
@@ -111,4 +104,4 @@ private:
 
 }   // namespace ur5_arm_zell_hardware_interface
 
-#endif 
+#endif  // ROS2_CONTROL_HARDWARE__ROBOT_SYSTEM_HPP_

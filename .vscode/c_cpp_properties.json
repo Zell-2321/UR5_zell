@@ -5,7 +5,8 @@
             "includePath": [
                 "${workspaceFolder}/**",
                 "/opt/ros/humble/include/**",
-                "/usr/include/**"
+                "/usr/include/**",
+                "${workspaceFolder}/ur5_arm_zell_controller_interface/include"
             ],
             "defines": [],
             "compilerPath": "/usr/bin/gcc",
