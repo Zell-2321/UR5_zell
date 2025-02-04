@@ -43,10 +43,11 @@ def generate_launch_description() -> LaunchDescription:
         # - forward_velocity_controller
         # - forward_acceleration_controller # gazebo hardware interface does not support this controller
         # - joint_effort_controller
+        # - joint_trajectory_controller 
     declared_arguments.append(
         DeclareLaunchArgument(
             "robot_controller",
-            default_value="forward_velocity_controller",
+            default_value="forward_position_controller",
             description="Robot controller to start. \
                 see: https://control.ros.org/rolling/index.html for more description",
         )

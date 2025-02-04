@@ -4,8 +4,8 @@
         <gazebo>
             <plugin filename="libgazebo_ros2_control.so" name="gazebo_ros2_control">
                 <robot_sim_type>gazebo_ros2_control/GazeboSystem</robot_sim_type>
-                <!-- <parameters>$(find ur5_arm_zell_bringup)/config/controller_configuration.yaml</parameters> -->
-                <parameters>$(find ur5_arm_zell_controller_interface)/config/robot_controllers_custom.yaml</parameters>
+                <parameters>$(find ur5_arm_zell_bringup)/config/controller_configuration.yaml</parameters>
+                <!-- <parameters>$(find ur5_arm_zell_controller_interface)/config/robot_controllers_custom.yaml</parameters> -->
             </plugin>
         </gazebo>
     </xacro:macro>

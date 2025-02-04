@@ -80,12 +80,10 @@ joint_trajectory_controller:
     command_interfaces:
       - position
       - velocity
-      - acceleration
 
     state_interfaces:
       - position
       - velocity
-      - acceleration
 
     state_publish_rate: 50.0 # Hz, Defaults to 50
     action_monitor_rate: 20.0 # Hz, Defaults to 20
