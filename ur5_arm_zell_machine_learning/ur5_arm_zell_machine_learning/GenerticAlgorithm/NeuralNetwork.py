@@ -4,7 +4,7 @@ import numpy as np
 from Individual import *
 
 class NeuralNetwork(nn.Module):
-    def __init__(self, individual, device="cpu"):
+    def __init__(self, individual: Individual, device="cpu") -> None:
         """
         与遗传算法深度集成的神经网络
         :param individual: 关联的Individual实例
@@ -49,8 +49,8 @@ class NeuralNetwork(nn.Module):
         if x.shape[1] != 19:
             raise ValueError(f"输入特征维度应为19，当前为 {x.shape[1]}")
         
-        # 转换为浮点型并发送到设备
-        x = x.float().to(self.device)
+        # 转换为浮点型并发送到设备 TODO： 暂不支持GPU加速
+        # x = x.float().to(self.device)
         
         # 分段计算（第一部分：基因矩阵1-6）
         parts = []
@@ -69,9 +69,11 @@ class NeuralNetwork(nn.Module):
         # 后续全连接计算（基因矩阵7-9）
         for matrix in self.gene_matrices[6:]:
             x = torch.sigmoid(torch.mm(x, matrix))
+
+        x = (2 * np.pi) * x - np.pi
             
         return x  # (batch, 1)
-
+    
     @property
     def description(self) -> str:
         """网络结构描述"""
@@ -80,7 +82,7 @@ class NeuralNetwork(nn.Module):
             f"全连接层={self.individual.gene_shapes[6:]}]"
         )
 
-    def to(self, device: str) -> nn.Module:
+    def todev(self, device: str) -> nn.Module:
         """设备转移的增强实现"""
         self.device = torch.device(device)
         # 转移所有基因矩阵到新设备
@@ -93,7 +95,7 @@ if __name__=='__main__':
     net = NeuralNetwork(ind, device="cpu")
 
     # 批量前向计算 (支持任意batch_size)
-    input_tensor = torch.randn(3, 19)  # 批量大小32
+    input_tensor = torch.ones(3, 19)  # 批量大小32
     output = net(input_tensor.to("cpu"))  # 形状 (32, 1)
     print(output)
 

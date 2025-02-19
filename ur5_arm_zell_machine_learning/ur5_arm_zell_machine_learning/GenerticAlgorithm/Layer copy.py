@@ -25,26 +25,6 @@ class FitnessCalculater:
         self.test_case = None
         self.FK = FK
 
-    def new_target_pos(self) -> np.ndarray:
-        # 生成随机旋转矩阵
-        axis = np.random.randn(3)
-        axis /= np.linalg.norm(axis)  # 归一化为单位向量
-        angle = np.random.uniform(0, 2 * np.pi)  # 随机旋转角度
-        R = tf3d.axangles.axangle2mat(axis, angle)  # 旋转矩阵 (3x3)
-
-        # 生成随机平移向量，模长不超过 1
-        t = np.random.uniform(-1, 1, size=3)
-        if np.linalg.norm(t) > 1:
-            t = t / np.linalg.norm(t)  # 归一化后再缩放
-            t *= np.random.uniform(0, 1)  # 缩放到 [0,1] 范围内
-
-        # 构造齐次变换矩阵 (4x4)
-        H = np.eye(4)
-        H[:3, :3] = R  # 旋转部分
-        H[:3, 3] = t   # 平移部分
-
-        return H  
-
     def calculate_fitness(self, individual: Individual) -> None:
         """
         Fitness变量: fitness: 函数返回值， fitness_prev = 运动前fitness, fitness_now: 运动后 fitness
@@ -70,8 +50,6 @@ class FitnessCalculater:
         """
         
         fitness = 0.0
-        
-        # self.target_pos = self.new_target_pos()
         fitness_prev = 0.0
         fitness_now = 0.0
         neural_network = NeuralNetwork(individual=individual)
@@ -109,15 +87,13 @@ class FitnessCalculater:
             H_i_1_i = self.FK.cal_transform_matrix(joint_id=i, joint_value=self.FK.joint_value[i-1])
 
             fitness_now = self.evaluate_transform_similarity(H_i_1_target, H_i_1_i@H_i_n)
-            if fitness_now - fitness_prev <0:
-                fitness += (fitness_now-fitness_prev) * 5
             fitness += (fitness_now-fitness_prev) * (11-i)
             fitness_prev = fitness_now
             # print("当前得分：", fitness)
 
             H_i_n = H_i_1_i@H_i_n
 
-        individual.fitness = torch.tensor(fitness/4, dtype=torch.float32)
+        individual.fitness = torch.tensor(fitness, dtype=torch.float32)
         ee = self.FK.cal_ee_pos()
         R1, t1 = ee[:3, :3], ee[:3, 3]
         R2, t2 = self.target_pos[:3, :3], self.target_pos[:3, 3]
@@ -189,12 +165,17 @@ class Layer:
         self.individuals: List[Individual] = [] # 对象索引列表
         self.pass_list: List[Individual] = [] # 传递给下层的对象列表
         self.previous_layer = previous_layer
+        # self.individual_number = 0
         self.generation_number = 0
         self.fitness_calculater = Fitness_calculater
         self.logger = setup_logger(log_file=f"logs/Layer_Class_Layer{self.layer_id}.log")
-        self.next_layer_fitness = torch.inf
+        
+        # 预分配内存优化（针对大规模种群）
+        # self._weights_buffer = None  # 张量缓存 [capacity, total_weights_dim]
+        # self._age_buffer = None      # 年龄张量 [capacity]
+        # self._fitness_buffer = None  # 适应度张量 [capacity]
 
-    def initialize(self) -> None:
+    def initialize(self, template_individual: Individual) -> None:
         """
         初始化层的存储空间
         :param template_individual: 用于获取权重维度的模板个体
@@ -203,188 +184,167 @@ class Layer:
         重置缓存空间
 
         """
+        # total_weights = template_individual.weights_tensor.numel()
+        
+        # 预分配连续内存
+        # self._weights_buffer = torch.randn(
+        #     (self.config.capacity, total_weights),
+        #     dtype=torch.float32,
+        #     device=self.device
+        # )
+
+        # self._age_buffer = torch.ones(
+        #     self.config.capacity, 
+        #     dtype=torch.int32,
+        #     device=self.device
+        # )
+        # self._fitness_buffer = torch.full(
+        #     (self.config.capacity,),
+        #     -torch.inf,
+        #     dtype=torch.float32,
+        #     device=self.device
+        # )
+
+        # self.individual_number = 0
         self.generation_number = 0
+        
+        # if self.layer_id == 1:
+            # self.individual_number = self.config.capacity
+        
         self.individuals = []
         # 初始化个体
-        if self.layer_id == 1:
-            for _ in range(self.config.capacity):
-                ind = Individual()
-                self.individuals.append(ind)
-                self.fitness_calculater.calculate_fitness(ind) 
+        for i in range(self.config.capacity):
+            ind = Individual()
+            # self._weights_buffer[i] = ind.weights_tensor
+            self.individuals.append(ind)
+            # TODO:更新所有个体Fitness
+            self.fitness_calculater.calculate_fitness(ind) 
+            # self._fitness_buffer[i] = ind.fitness #拷贝
+
+
+    def get_migrants(self) -> List[Individual]:
+        """获取需要迁移到下一层的个体"""
+        age_mask = self._age_buffer > self.config.max_age
+        migrant_indices = torch.where(age_mask)[0].tolist()
+        
+        migrants = []
+        for idx in migrant_indices:
+            # 更新个体元数据
+            self.individuals[idx].age = self._age_buffer[idx].item()
+            self.individuals[idx].fitness = self._fitness_buffer[idx].item()
+            migrants.append(self.individuals[idx])
+        
+        # 清空迁移个体的位置
+        self._weights_buffer[age_mask] = 0
+        self._fitness_buffer[age_mask] = -np.inf
+        return migrants
 
     def add_individuals(self, individuals: List[Individual]) -> None:
         """
         添加新个体到本层（来自上层迁移或初始化）
         :param individuals: 待添加的个体列表
         """
+        print(self._fitness_buffer)
+        print(self._fitness_buffer == -torch.inf)
+        empty_slots = torch.where(self._fitness_buffer == -torch.inf)[0]
+        
         for i in range(len(individuals)):
             # 判断个体fitness是否达到当前层数要求
-            if individuals[i].fitness >= self.next_layer_fitness:
-                self.pass_list.append(individuals[i])
-                continue
-
             if individuals[i].fitness >= self.config.fitness_requirement:
                 # 判断年龄是否满足要求：
-                if individuals[i].age <= self.config.max_age:
+                if individuals[i].age >= self.config.max_age:
                     # 存在空位
-                    if len(self.individuals) < self.config.capacity:
-                        self.individuals.append(individuals[i])
+                    if i < len(empty_slots):
+                        self._weights_buffer[empty_slots[i]] = individuals[i].weights_tensor.to(self.device)
+                        self._age_buffer[empty_slots[i]] = individuals[i].age
+                        self._fitness_buffer[empty_slots[i]] = individuals[i].fitness
+                        self.individuals[empty_slots[i]] = individuals[i]
+                        self.individual_number += 1
                     
                     # 当前层已满
                     else:
-                        min_ind = min(self.individuals, key=lambda ind: ind.fitness)
+                        min_index = torch.argmin(self._fitness_buffer)
                         # 若当前个体更优则添加
-                        if individuals[i].fitness > min_ind.fitness:
-                            self.individuals.remove(min_ind)
-                            self.individuals.append(individuals[i])
+                        if individuals[i].fitness > self._fitness_buffer[min_index]:
+                            self._weights_buffer[min_index] = individuals[i].weights_tensor.to(self.device)
+                            self._age_buffer[min_index] = individuals[i].age
+                            self._fitness_buffer[min_index] = individuals[i].fitness
+                            self.individuals[min_index] = individuals[i]
                 
+                else:
+                    self.pass_list.append(individuals[i])
 
-    def evolve(self, selection_ratio: float = 0.4) -> None:
+    def evolve(self, selection_ratio: float = 0.2) -> None:
         """
         执行遗传操作（选择、交叉、变异）
         :param selection_ratio: 选择保留的优秀个体比例
         """
         # 0. 处理上层个体
         self.pass_list = [] # 清空当前层传递列表
-        if self.previous_layer is not None:
-            self.add_individuals(self.previous_layer.pass_list)
-        
+        self.add_individuals(self.previous_layer.pass_list)
+
         # 1. 选择
-        # if len(self.individuals) < 10:
-        #     num_keep = len(self.individuals)
-        # else:
-        #     num_keep = int(len(self.individuals) * selection_ratio) # 保留的个体数
-
-        selection_ratio = 1.0*np.exp(-len(self.individuals)/self.config.capacity)
-        num_keep = int(len(self.individuals) * selection_ratio)
-
-        sorted_indices = sorted(
-            range(len(self.individuals)),                   # 生成索引序列
-            key=lambda i: self.individuals[i].fitness,     # 按 fitness 作为排序键
-            reverse=True                                   # 从大到小排序
-        )
+        num_keep = int(self.individual_number * selection_ratio) # 保留的个体数
+        sorted_indices = torch.argsort(self._fitness_buffer, descending=True)
         elite_indices = sorted_indices[:num_keep]
         self.generation_number += 1
-
-        if self.layer_id == 1:
-            print("num_keep:", num_keep)
         
         # 2. 交叉（锦标赛选择）
         parents = self._select_parents(selection_ratio)
-        if self.layer_id == 1:
-            print("parent_len:", len(parents))
         
         # 3. 生成后代
         children = []
         for i in range(0, len(parents), 2):
             if i+1 >= len(parents):
                 break
-            for _ in range(self.layer_id):
-                child = self._crossover(parents[i], parents[i+1])
-                child = self._mutate(child)
-                self.fitness_calculater.calculate_fitness(child)
-                children.append(child)
-            
-
-        if self.layer_id == 1:
-            print("children_len:", len(children))
+            child = self._crossover(parents[i], parents[i+1])
+            child = self._mutate(child)
+            children.append(child)
+            # TODO: 计算fitness
+            self.fitness_calculater.calculate_fitness()
         
         # 4. 更新种群
         new_population = [self.individuals[i] for i in elite_indices] + children
-        self.individuals = []
+        self.initialize(Individual())
         self.add_individuals(new_population)
     
-    # def _select_parents(self, selection_ratio: float = 0.4) -> List[Individual]:
-    #     """
-    #     从本层以及上层的个体中通过锦标赛选择个体
-    #     selection_ratio: 选择个体的比例
-    #     """
-    #     if len(self.individuals) < 10:
-    #         num_keep = len(self.individuals)
-    #     else:
-    #         num_keep = int(len(self.individuals) * selection_ratio) # 保留的个体数
-
-    #     # 锦标赛选择 父代数量为期望子代数量的2倍
-    #     tournament_size = 3
-    #     parents = []
-    #     N_layer = int(self.config.capacity*(1-np.exp(-self.config.beta*self.generation_number))) # 当前层应该有的个体数
-
-    #     num_new_individuals = max(0, N_layer - num_keep) # 需要生成的子代数
-    #     num_current_layer_parents = 2*int(num_new_individuals * self.config.alpha)
-    #     num_previous_layer_parents = 2*(num_new_individuals - num_current_layer_parents)
-
-    #     # 当前层锦标赛选择
-    #     for _ in range(num_current_layer_parents):
-    #         tournament_contestants = random.sample(self.individuals, min(tournament_size, len(self.individuals)))
-    #         if len(tournament_contestants) > 0:
-    #                 winner = max(tournament_contestants, key=lambda ind: ind.fitness)
-    #                 parents.append(winner)
-
-    #     # 上一层锦标赛选择
-    #     for _ in range(num_previous_layer_parents):
-    #         if self.previous_layer is not None:
-    #             tournament_contestants = random.sample(self.previous_layer.individuals, min(tournament_size, len(self.previous_layer.individuals)))
-    #             if len(tournament_contestants) > 0:
-    #                 winner = max(tournament_contestants, key=lambda ind: ind.fitness)
-    #                 parents.append(winner)
-    #         else: 
-    #             print(f"Layer{self.layer_id} can not get data from previous layer! Skip selection")
-
-    #     random.shuffle(parents)
-
-    #     return parents
-    def _select_parents(self, selection_ratio: float = 0.1) -> List[Individual]:
+    def _select_parents(self, selection_ratio: float = 0.2) -> List[Individual]:
         """
         从本层以及上层的个体中通过锦标赛选择个体
         selection_ratio: 选择个体的比例
         """
-        if len(self.individuals) < 10:
-            num_keep = len(self.individuals)
-        else:
-            num_keep = int(len(self.individuals) * selection_ratio)+10  # 保留的个体数
-        if num_keep > len(self.individuals):
-            num_keep = len(self.individuals)
+        num_keep = int(self.individual_number * selection_ratio) # 保留的个体数
+        # sorted_indices = torch.argsort(self._fitness_buffer, descending=True)
+        # elite_indices = sorted_indices[:num_keep]
 
-        # 锦标赛选择，父代数量为期望子代数量的2倍
+        # 锦标赛选择 父代数量为期望子代数量的2倍
         tournament_size = 3
         parents = []
-        selected_set = set()  # 用于跟踪已选择的个体，防止重复
+        N_layer = int(self.config.capacity*(1-np.exp(-self.config.beta*self.generation_number))) # 当前层应该有的个体数
 
-        # N_layer = int(self.config.capacity * (1 - np.exp(-self.config.beta * self.generation_number)))  # 当前层应该有的个体数
-        # num_new_individuals = max(0, N_layer - num_keep)  # 需要生成的子代数
-        num_new_individuals = max(0, self.config.capacity - num_keep)  # 需要生成的子代数
-        num_current_layer_parents = 2 * int(num_new_individuals * self.config.alpha)
-        num_previous_layer_parents = 2 * (num_new_individuals - num_current_layer_parents)
+        num_new_individuals = max(0, N_layer - num_keep) # 需要生成的子代数
+        num_current_layer_parents = 2*int(num_new_individuals * self.config.alpha)
+        num_previous_layer_parents = 2*(num_new_individuals - num_current_layer_parents)
+
+        valid_indices_current_layer = torch.nonzero(self._fitness_buffer != -np.inf).flatten()
+        valid_indices_previous_layer = torch.nonzero(self.previous_layer._fitness_buffer != -np.inf).flatten()
 
         # 当前层锦标赛选择
         for _ in range(num_current_layer_parents):
-            available_contestants = [ind for ind in self.individuals if ind not in selected_set]
-            if len(available_contestants) == 0:
-                break  # 没有更多可选的个体，跳出循环
-
-            tournament_contestants = random.sample(available_contestants, min(tournament_size, len(available_contestants)))
-            winner = max(tournament_contestants, key=lambda ind: ind.fitness)
-            
-            parents.append(winner)
-            selected_set.add(winner)  # 标记为已选择
-
+            candidates = torch.randint(0, valid_indices_current_layer.size(0), (tournament_size,))
+            selected_candidates = valid_indices_current_layer[candidates]
+            winner = selected_candidates[torch.argmax(self._fitness_buffer[selected_candidates])]
+            parents.append(self.individuals[winner])
 
         # 上一层锦标赛选择
         for _ in range(num_previous_layer_parents):
-            if self.previous_layer is not None:
-                available_contestants_prev = [ind for ind in self.previous_layer.individuals if ind not in selected_set]
-                if len(available_contestants_prev) == 0:
-                    break
-
-                tournament_contestants = random.sample(available_contestants_prev, min(tournament_size, len(available_contestants_prev)))
-                winner = max(tournament_contestants, key=lambda ind: ind.fitness)
-                
-                parents.append(winner)
-                selected_set.add(winner)  # 标记为已选择
-            else:
-                print(f"Layer {self.layer_id} cannot get data from the previous layer! Skipping selection.")
+            candidates = torch.randint(0, valid_indices_previous_layer.size(0), (tournament_size,))
+            selected_candidates = valid_indices_previous_layer[candidates]
+            winner = selected_candidates[torch.argmax(self.previous_layer._fitness_buffer[selected_candidates])]
+            parents.append(self.previous_layer.individuals[winner])
 
         random.shuffle(parents)
+
         return parents
 
     def _crossover(self, parent1: Individual, parent2: Individual) -> Individual:
@@ -403,13 +363,13 @@ class Layer:
     @property
     def average_fitness(self) -> float:
         """计算本层的平均适应度"""
-        
-        return torch.mean(torch.tensor([ind.fitness.item() for ind in self.individuals]))
+        valid_mask = self._fitness_buffer != -np.inf
+        return self._fitness_buffer[valid_mask].mean().item()
 
-    # def to(self, device: str):
-    #     """转移层数据到指定设备"""
-    #     self.device = torch.device(device)
-    #     self._weights_buffer = self._weights_buffer.to(device)
-    #     self._age_buffer = self._age_buffer.to(device)
-    #     self._fitness_buffer = self._fitness_buffer.to(device)
-    #     return self
+    def to(self, device: str):
+        """转移层数据到指定设备"""
+        self.device = torch.device(device)
+        self._weights_buffer = self._weights_buffer.to(device)
+        self._age_buffer = self._age_buffer.to(device)
+        self._fitness_buffer = self._fitness_buffer.to(device)
+        return self

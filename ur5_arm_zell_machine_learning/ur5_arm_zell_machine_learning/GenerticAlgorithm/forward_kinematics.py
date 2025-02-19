@@ -111,7 +111,8 @@ class ForwardKinematics:
         Returns:
             np.ndarray: 末端执行器的4x4位姿矩阵 / 4x4 pose matrix of end-effector
         """
-        return self.cal_transform_matrix_range(0, self.joint_number)
+        matrix = self.cal_transform_matrix_range(0, self.joint_number)
+        return matrix
     
     def set_joint_angle(self, joint_angle: Union[np.ndarray, List, Tuple, float]) -> None:
         """

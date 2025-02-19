@@ -18,10 +18,18 @@ class Individual:
     age: int = 0
     gene_shapes: tuple = ((3,16), (4,16), (3,16), (4,16), (4,16), (1,16), (96,64), (64,32), (32,1))  # 各层权重形状
     weights_tensor: torch.Tensor = None  # 展平后的权重张量（核心优化）
-    fitness: float = -np.inf
+    fitness: float = -torch.inf
     species: str = "IK_group1"  # 可保留为轻量级标签
 
-    def __post_init__(self):
+    def __eq__(self, other):
+        if isinstance(other, Individual):
+            return self is other  # 直接比较对象地址
+        return False
+    
+    def __hash__(self):
+        return id(self)
+    
+    def __post_init__(self) -> None:
         if self.weights_tensor is None:
             self.weights_tensor = self._init_random_weights()
     
